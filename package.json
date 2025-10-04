@@ -1,0 +1,15 @@
+{
+  "name": "full-stack-app",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "install:all": "npm install --prefix client && npm install --prefix server",
+    "dev": "concurrently \"npm run dev --prefix client\" \"npm run dev --prefix server\"",
+    "client": "npm start --prefix client",
+    "server": "nodemon server/src/server.js --prefix server"
+  },
+  "dependencies": {
+    "concurrently": "^7.0.0",
+    "nodemon": "^2.0.0"
+  }
+}
