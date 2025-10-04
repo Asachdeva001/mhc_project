@@ -1,13 +1,13 @@
-import React from 'react';
+import Navbar from "./components/Navbar";
+import Hero from "./components/Hero";
+import Footer from "./components/Footer";
 
-function App() {
+export default function App() {
   return (
-    <div className="App">
-      <h1 className="text-3xl font-bold underline">
-        Welcome to the Full Stack App!
-      </h1>
+    <div className="flex flex-col min-h-screen">
+      <Navbar />
+      <Hero />
+      <Footer />
     </div>
   );
 }
-
-export default App;
