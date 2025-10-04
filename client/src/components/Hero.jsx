@@ -1,6 +1,6 @@
 export default function Hero() {
   return (
-    <section className="flex flex-col items-center text-center py-20">
+    <section className="flex flex-col items-center text-center py-10">
       <h2 className="text-5xl font-extrabold text-gray-800">Your AI Wellness Companion</h2>
       <p className="mt-4 text-lg text-gray-600 max-w-xl">
         Take care of your mental health with personalized support, mood tracking, and wellness activities designed just for you.

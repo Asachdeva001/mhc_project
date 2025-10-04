@@ -7,7 +7,7 @@ export default function Features() {
   ];
 
   return (
-    <section className="grid md:grid-cols-4 gap-6 px-10 py-16 bg-white rounded-t-3xl shadow-lg">
+    <section className="grid md:grid-cols-4 gap-6 px-10 py-6 bg-white rounded-t-3xl shadow-lg">
       {features.map((f, i) => (
         <div key={i} className="p-6 bg-gray-50 rounded-xl shadow hover:shadow-md transition">
           <div className="text-4xl mb-3">{f.icon}</div>
