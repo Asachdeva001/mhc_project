@@ -1,29 +1,25 @@
 # Full Stack Application
 
-This project is a full-stack application that consists of a React frontend and a Node.js/Express backend. The frontend is styled using Tailwind CSS.
+This project is a full-stack application built with Next.js for both frontend and backend, with API routes handling server-side logic.
 
 ## Project Structure
 
 ```
-full-stack-app
-├── client                # Frontend application
-│   ├── public            # Public assets
-│   │   └── index.html    # Main HTML file
-│   ├── src               # Source files for React
-│   │   ├── components     # React components
-│   │   ├── App.jsx       # Main App component
-│   │   ├── index.css     # Global CSS styles
-│   │   └── index.jsx     # Entry point for React
-│   ├── package.json      # Frontend dependencies and scripts
-│   ├── postcss.config.js # PostCSS configuration
-│   └── tailwind.config.js # Tailwind CSS configuration
-├── server                # Backend application
-│   ├── src               # Source files for Node.js
-│   │   ├── controllers    # Controllers for business logic
-│   │   ├── routes         # API routes
-│   │   └── server.js      # Entry point for Express
-│   └── package.json      # Backend dependencies and scripts
-├── package.json          # Main project configuration
+mhc-project
+├── app                   # Next.js app directory
+│   ├── api               # API routes (backend)
+│   │   └── [route]       # Dynamic API endpoints
+│   ├── components        # React components
+│   ├── page.jsx          # Home page
+│   └── layout.jsx        # Root layout
+├── public                # Public assets
+├── styles                # Global styles
+│   └── globals.css       # Global CSS with Tailwind
+├── .env.local            # Environment variables (local)
+├── next.config.js        # Next.js configuration
+├── tailwind.config.js    # Tailwind CSS configuration
+├── postcss.config.js     # PostCSS configuration
+├── package.json          # Project dependencies and scripts
 └── README.md             # Project documentation
 ```
 
@@ -38,28 +34,35 @@ full-stack-app
 1. Clone the repository:
    ```
    git clone <repository-url>
-   cd full-stack-app
+   cd mhc-project
    ```
 
-2. Install dependencies for both frontend and backend:
+2. Install dependencies:
    ```
    npm install
    ```
 
+3. Create a `.env.local` file for environment variables:
+   ```
+   NEXT_PUBLIC_API_URL=http://localhost:3000
+   ```
+
 ### Running the Application
 
-To start both the frontend and backend simultaneously, run:
+To start the development server:
 ```
 npm run dev
 ```
 
+The application will be available at `http://localhost:3000`.
+
 ### Built With
 
+- Next.js
 - React
 - Tailwind CSS
-- Node.js
-- Express
+- Node.js (via API Routes)
 
 ### License
 
-This project is licensed under the MIT License.# mhc_project
+This project is licensed under the MIT License.
