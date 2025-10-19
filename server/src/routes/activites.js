@@ -129,4 +129,41 @@ const allActivities = [
   }
 ];
 
+router.get('/today', verifyToken, async (req, res) => {
+  try {
+    const today = new Date().toISOString().split('T')[0];
+
+    const recentMoodQuery = await db
+      .collection('moodEntries')
+      .where('userId', '==', req.user.uid)
+      .orderBy('date', 'desc')
+      .limit(3)
+      .get();
+
+    const recentMoods = recentMoodQuery.docs.map(doc => doc.data());
+    const avgMood = recentMoods.length > 0
+      ? recentMoods.reduce((sum, entry) => sum + entry.mood, 0) / recentMoods.length
+      : 5;
+
+    const activityHistoryQuery = await db
+      .collection('activities')
+      .where('userId', '==', req.user.uid)
+      .where('date', '>=', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0])
+      .get();
+
+    const recentActivityIds = activityHistoryQuery.docs.map(doc => doc.data().activityId);
+
+    const suitableActivities = allActivities.filter(activity => {
+      const isMoodSuitable = avgMood >= activity.moodRange[0] && avgMood <= activity.moodRange[1];
+      const notRecentlyDone = !recentActivityIds.includes(activity.id);
+      return isMoodSuitable && notRecentlyDone;
+    });
+
+    req.suitableActivities = suitableActivities;
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch activities' });
+  }
+});
+
+
 module.exports = router;
