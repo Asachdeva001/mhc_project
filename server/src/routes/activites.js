@@ -166,4 +166,30 @@ router.get("/today", verifyToken, async (req, res) => {
   }
 });
 
+router.post('/complete', verifyToken, async (req, res) => {
+  try {
+    const { activityId, notes } = req.body;
+
+    if (!activityId) {
+      return res.status(400).json({ error: 'Activity ID is required' });
+    }
+
+    const today = new Date().toISOString().split('T')[0];
+
+    await db.collection('activities').add({
+      userId: req.user.uid,
+      activityId,
+      date: today,
+      completedAt: admin.firestore.FieldValue.serverTimestamp(),
+      notes: notes || '',
+      createdAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+
+    res.json({ message: 'Activity marked as completed' });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to complete activity' });
+  }
+});
+
+
 module.exports = router;
