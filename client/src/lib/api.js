@@ -38,8 +38,11 @@ const apiCall = async (endpoint, options = {}) => {
   }
 };
 
-// API functions (ONLY MOOD)
+// API functions (Mood + Chat)
 export const api = {
+  // -------------------------
+  // MOOD API
+  // -------------------------
   mood: {
     logMood: async (moodData) => {
       return apiCall('/api/mood/log', {
@@ -62,6 +65,33 @@ export const api = {
     },
   },
 
+  // -------------------------
+  // CHAT API
+  // -------------------------
+  chat: {
+    saveConversation: async (messages, sessionId = null) => {
+      return apiCall('/api/generate/save-conversation', {
+        method: 'POST',
+        body: JSON.stringify({ messages, sessionId }),
+      });
+    },
+
+    getConversations: async (limit = 10) => {
+      return apiCall(`/api/generate/conversations?limit=${limit}`);
+    },
+
+    getConversation: async (sessionId) => {
+      return apiCall(`/api/generate/conversation/${sessionId}`);
+    },
+
+    deleteConversation: async (sessionId) => {
+      return apiCall(`/api/generate/conversation/${sessionId}`, {
+        method: 'DELETE',
+      });
+    },
+  },
+
+  // Optional: health check
   healthCheck: async () => {
     return apiCall('/health');
   },
