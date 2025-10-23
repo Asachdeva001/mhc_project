@@ -1,64 +1,227 @@
-import Image from "next/image";
+'use client';
 
-export default function Home() {
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '../lib/authContext';
+import { useEffect, useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { MessageSquareHeart, BarChart3, Sparkles, UserPlus, PencilLine, BotMessageSquare } from 'lucide-react';
+
+// Updated background gradient with a green theme
+const BackgroundGradient = () => (
+  <div className="absolute inset-0 -z-10 bg-gradient-to-tr from-emerald-50 via-teal-50 to-cyan-50" />
+);
+
+
+// Reusable component for feature cards (styles are theme-agnostic)
+const FeatureCard = ({ icon, title, text, delay }) => {
+  const cardVariants = {
+    offscreen: { y: 50, opacity: 0 },
+    onscreen: {
+      y: 0,
+      opacity: 1,
+      transition: { type: "spring", stiffness: 40, damping: 10, delay },
+    },
+  };
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.js file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <motion.div
+      className="bg-white/60 backdrop-blur-xl rounded-2xl p-8 text-center shadow-lg hover:shadow-2xl transition-shadow duration-300 border border-white/20"
+      initial="offscreen"
+      whileInView="onscreen"
+      viewport={{ once: true, amount: 0.5 }}
+      variants={cardVariants}
+      whileHover={{ y: -8, scale: 1.03 }}
+      transition={{ type: 'spring', stiffness: 300 }}
+    >
+      <div className="flex justify-center items-center mb-4">
+        <div className="p-4 bg-white rounded-full shadow-md">
+          {icon}
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+      </div>
+      <h3 className="text-xl font-bold text-gray-800 mb-2">{title}</h3>
+      <p className="text-gray-600 leading-relaxed">{text}</p>
+    </motion.div>
+  );
+};
+
+
+export default function LandingPage() {
+  const { isAuthenticated, loading } = useAuth();
+  const router = useRouter();
+  const [scrolled, setScrolled] = useState(false);
+
+  // Effect to handle scroll detection for the navbar
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 10);
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  useEffect(() => {
+    if (!loading && isAuthenticated) {
+      router.push('/dashboard');
+    }
+  }, [isAuthenticated, loading, router]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <div className="text-xl font-semibold text-gray-700">Loading your space...</div>
+      </div>
+    );
+  }
+
+  if (isAuthenticated) {
+    return null; // Redirecting...
+  }
+  
+  // Animation variants for the hero text
+  const heroContainerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: { staggerChildren: 0.1, delayChildren: 0.2 },
+    },
+  };
+
+  const heroItemVariants = {
+    hidden: { y: 20, opacity: 0 },
+    visible: { y: 0, opacity: 1, transition: { type: 'spring', stiffness: 100 } },
+  };
+
+  return (
+    <div className="relative min-h-screen w-full font-sans text-gray-800 overflow-x-hidden">
+      <BackgroundGradient />
+      
+      {/* NAVBAR WITH GREEN THEME */}
+      <motion.header 
+        className="fixed top-0 left-0 right-0 z-50 transition-all duration-300"
+        animate={{
+          backgroundColor: scrolled ? 'rgba(255, 255, 255, 0.8)' : 'rgba(255, 255, 255, 0)',
+          backdropFilter: scrolled ? 'blur(12px)' : 'blur(0px)',
+          boxShadow: scrolled ? '0 4px_6px -1px rgba(0, 0, 0, 0.05)' : 'none',
+        }}
+      >
+        <div className="container mx-auto px-6 py-4 flex justify-between items-center">
+          <Link href="/" className="text-2xl font-bold text-gray-800">
+            Mental<span className="text-emerald-600">Buddy</span>
+          </Link>
+          <nav className="flex items-center space-x-2 md:space-x-4">
+            <Link href="/auth/signin" className="px-4 py-2 text-gray-600 hover:text-emerald-600 transition-colors rounded-full hover:bg-gray-900/5">
+              Sign In
+            </Link>
+            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+              <Link href="/auth/signup" className="bg-emerald-500 text-white font-semibold px-5 py-2 rounded-full hover:bg-emerald-600 transition-all duration-300 shadow-lg hover:shadow-emerald-500/30">
+                Sign Up
+              </Link>
+            </motion.div>
+          </nav>
+        </div>
+      </motion.header>
+
+      <main className="pt-28 md:pt-32 relative z-10">
+        {/* Hero Section */}
+        <section className="container mx-auto px-6 py-16 text-center">
+          <motion.h1 
+            className="text-4xl md:text-6xl lg:text-7xl font-extrabold text-gray-900 mb-6 leading-tight"
+            variants={heroContainerVariants}
+            initial="hidden"
+            animate="visible"
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
+            <motion.span className="block" variants={heroItemVariants}>A helping hand for a</motion.span>
+            <motion.span 
+              className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-500 to-teal-600 block"
+              variants={heroItemVariants}
+            >
+              healthier mind
+            </motion.span>
+          </motion.h1>
+          <motion.p 
+            className="text-lg md:text-xl text-gray-600 mb-12 max-w-3xl mx-auto tracking-wide"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.4 }}
+          >
+            Your personal AI companion for tracking moods, practicing mindfulness, and finding support whenever you need it.
+          </motion.p>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.6 }}
+            whileHover={{ scale: 1.05, boxShadow: '0px 15px 30px -10px rgba(16, 185, 129, 0.4)' }}
+            whileTap={{ scale: 0.95 }}
+          >
+            <Link
+              href="/auth/signup"
+              className="bg-emerald-500 text-white font-bold py-4 px-10 rounded-full text-lg transition-all duration-300 shadow-xl"
+            >
+              Get Started for Free
+            </Link>
+          </motion.div>
+        </section>
+        
+        {/* Features Section */}
+        <section className="container mx-auto px-6 py-20">
+          <div className="text-center mb-16">
+             <h2 className="text-3xl md:text-4xl font-bold text-gray-800">Everything you need to feel your best</h2>
+             <p className="text-md text-gray-500 mt-2">Discover tools designed for your well-being.</p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <FeatureCard
+              icon={<MessageSquareHeart size={32} className="text-emerald-500" />}
+              title="AI Chat Support"
+              text="Get instant, compassionate, and personalized mental health support whenever you need it."
+              delay={0.1}
             />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
+            <FeatureCard
+              icon={<BarChart3 size={32} className="text-teal-500" />}
+              title="Mood Tracking"
+              text="Log your emotional patterns with insightful analytics to understand your journey and progress."
+              delay={0.2}
+            />
+            <FeatureCard
+              icon={<Sparkles size={32} className="text-cyan-500" />}
+              title="Wellness Activities"
+              text="Explore a library of guided meditations, breathing exercises, and activities to boost your wellbeing."
+              delay={0.3}
+            />
+          </div>
+        </section>
+
+         {/* How It Works Section */}
+        <section className="container mx-auto px-6 py-20">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-800">Get started in 3 simple steps</h2>
+            <p className="text-md text-gray-500 mt-2">Your journey to a better mind is just moments away.</p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-12 text-center">
+            <motion.div initial={{y: 20, opacity: 0}} whileInView={{y: 0, opacity: 1}} transition={{delay: 0.1}} viewport={{ once: true }}>
+              <div className="flex justify-center items-center mb-4 h-16 w-16 mx-auto bg-white rounded-full shadow-lg border">
+                <UserPlus size={32} className="text-emerald-500" />
+              </div>
+              <h3 className="text-xl font-semibold mb-2">1. Create Account</h3>
+              <p className="text-gray-600">Sign up for free and tell us a little about your goals.</p>
+            </motion.div>
+            <motion.div initial={{y: 20, opacity: 0}} whileInView={{y: 0, opacity: 1}} transition={{delay: 0.2}} viewport={{ once: true }}>
+              <div className="flex justify-center items-center mb-4 h-16 w-16 mx-auto bg-white rounded-full shadow-lg border">
+                <PencilLine size={32} className="text-teal-500" />
+              </div>
+              <h3 className="text-xl font-semibold mb-2">2. Log Your Moods</h3>
+              <p className="text-gray-600">Start tracking your feelings and activities to find patterns.</p>
+            </motion.div>
+            <motion.div initial={{y: 20, opacity: 0}} whileInView={{y: 0, opacity: 1}} transition={{delay: 0.3}} viewport={{ once: true }}>
+              <div className="flex justify-center items-center mb-4 h-16 w-16 mx-auto bg-white rounded-full shadow-lg border">
+                <BotMessageSquare size={32} className="text-cyan-500" />
+              </div>
+              <h3 className="text-xl font-semibold mb-2">3. Chat with Buddy</h3>
+              <p className="text-gray-600">Talk to your AI companion anytime you need support or guidance.</p>
+            </motion.div>
+          </div>
+        </section>
+
       </main>
     </div>
   );
