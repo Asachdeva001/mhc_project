@@ -191,5 +191,28 @@ router.post('/complete', verifyToken, async (req, res) => {
   }
 });
 
+router.get('/history', verifyToken, async (req, res) => {
+  try {
+    const { days = 7 } = req.query;
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - parseInt(days));
+
+    const activities = await db
+      .collection('activities')
+      .where('userId', '==', req.user.uid)
+      .where('completedAt', '>=', startDate)
+      .orderBy('completedAt', 'desc')
+      .get();
+
+    const history = activities.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+
+    res.json(history);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch activity history' });
+  }
+});
 
 module.exports = router;
