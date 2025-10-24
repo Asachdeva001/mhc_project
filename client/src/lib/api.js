@@ -1,17 +1,39 @@
-// API configuration for connecting to the backend
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+// API base URL
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
-// Helper function to make API calls
-const apiCall = async (endpoint, options = {}) => {
+// ---------------------------------------------
+// TOKEN REFRESH HELPER
+// ---------------------------------------------
+const refreshAuthToken = async () => {
+  try {
+    const storedUser = localStorage.getItem("user");
+    if (!storedUser) throw new Error("No user data found");
+
+    const userData = JSON.parse(storedUser);
+    const newTimestamp = Date.now();
+    const newToken = btoa(`${userData.uid}:${newTimestamp}`);
+
+    localStorage.setItem("authToken", newToken);
+    return newToken;
+  } catch (error) {
+    console.error("Token refresh failed:", error);
+    throw error;
+  }
+};
+
+// ---------------------------------------------
+// GENERAL API CALL HELPER
+// ---------------------------------------------
+const apiCall = async (endpoint, options = {}, isRetry = false) => {
   const url = `${API_BASE_URL}${endpoint}`;
 
   const defaultOptions = {
-    headers: { 'Content-Type': 'application/json' },
+    headers: { "Content-Type": "application/json" },
   };
 
-  // Add auth token if exists
-  if (typeof window !== 'undefined') {
-    const token = localStorage.getItem('authToken');
+  // Attach token
+  if (typeof window !== "undefined") {
+    const token = localStorage.getItem("authToken");
     if (token) {
       defaultOptions.headers.Authorization = `Bearer ${token}`;
     }
@@ -21,80 +43,113 @@ const apiCall = async (endpoint, options = {}) => {
     const response = await fetch(url, {
       ...defaultOptions,
       ...options,
-      headers: {
-        ...defaultOptions.headers,
-        ...options.headers,
-      },
+      headers: { ...defaultOptions.headers, ...options.headers },
     });
 
+    // Handle expired token (401)
+    if (response.status === 401 && !isRetry) {
+      try {
+        await refreshAuthToken();
+        return apiCall(endpoint, options, true);
+      } catch (err) {
+        localStorage.removeItem("authToken");
+        localStorage.removeItem("user");
+
+        if (typeof window !== "undefined") {
+          window.location.href = "/auth/signin";
+        }
+
+        throw new Error("Session expired. Please sign in again.");
+      }
+    }
+
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ error: 'Network error' }));
-      throw new Error(errorData.error || 'API request failed');
+      const errorData = await response.json().catch(() => ({ error: "Network error" }));
+      throw new Error(errorData.error || "API request failed");
     }
 
     return await response.json();
-  } catch (error) {
-    throw error;
+  } catch (err) {
+    throw err;
   }
 };
 
-// API functions (Mood + Chat)
+// ---------------------------------------------
+// FULL API EXPORT (AUTH + CHAT + MOOD)
+// ---------------------------------------------
 export const api = {
-  // -------------------------
-  // MOOD API
-  // -------------------------
-  mood: {
-    logMood: async (moodData) => {
-      return apiCall('/api/mood/log', {
-        method: 'POST',
-        body: JSON.stringify(moodData),
-      });
-    },
+  // ----------------------
+  // AUTH
+  // ----------------------
+  auth: {
+    signup: (userData) =>
+      apiCall("/api/auth/signup", {
+        method: "POST",
+        body: JSON.stringify(userData),
+      }),
 
-    getMoodEntries: async (params = {}) => {
-      const queryParams = new URLSearchParams(params).toString();
-      return apiCall(`/api/mood/entries${queryParams ? `?${queryParams}` : ''}`);
-    },
+    signin: (credentials) =>
+      apiCall("/api/auth/signin", {
+        method: "POST",
+        body: JSON.stringify(credentials),
+      }),
 
-    getMoodInsights: async (days = 7) => {
-      return apiCall(`/api/mood/insights?days=${days}`);
-    },
+    getProfile: () => apiCall("/api/auth/profile"),
 
-    getTodayMood: async () => {
-      return apiCall('/api/mood/today');
-    },
+    updateProfile: (profileData) =>
+      apiCall("/api/auth/profile", {
+        method: "PUT",
+        body: JSON.stringify(profileData),
+      }),
   },
 
-  // -------------------------
-  // CHAT API
-  // -------------------------
+  // ----------------------
+  // CHAT
+  // ----------------------
   chat: {
-    saveConversation: async (messages, sessionId = null) => {
-      return apiCall('/api/generate/save-conversation', {
-        method: 'POST',
+    saveConversation: (messages, sessionId = null) =>
+      apiCall("/api/generate/save-conversation", {
+        method: "POST",
         body: JSON.stringify({ messages, sessionId }),
-      });
-    },
+      }),
 
-    getConversations: async (limit = 10) => {
-      return apiCall(`/api/generate/conversations?limit=${limit}`);
-    },
+    getConversations: (limit = 10) =>
+      apiCall(`/api/generate/conversations?limit=${limit}`),
 
-    getConversation: async (sessionId) => {
-      return apiCall(`/api/generate/conversation/${sessionId}`);
-    },
+    getConversation: (sessionId) =>
+      apiCall(`/api/generate/conversation/${sessionId}`),
 
-    deleteConversation: async (sessionId) => {
-      return apiCall(`/api/generate/conversation/${sessionId}`, {
-        method: 'DELETE',
-      });
-    },
+    deleteConversation: (sessionId) =>
+      apiCall(`/api/generate/conversation/${sessionId}`, {
+        method: "DELETE",
+      }),
   },
 
-  // Optional: health check
-  healthCheck: async () => {
-    return apiCall('/health');
+  // ----------------------
+  // MOOD
+  // ----------------------
+  mood: {
+    logMood: (moodData) =>
+      apiCall("/api/mood/log", {
+        method: "POST",
+        body: JSON.stringify(moodData),
+      }),
+
+    getMoodEntries: (params = {}) => {
+      const q = new URLSearchParams(params).toString();
+      return apiCall(`/api/mood/entries${q ? `?${q}` : ""}`);
+    },
+
+    getMoodInsights: (days = 7) =>
+      apiCall(`/api/mood/insights?days=${days}`),
+
+    getTodayMood: () => apiCall("/api/mood/today"),
   },
+
+  // ----------------------
+  // HEALTH
+  // ----------------------
+  healthCheck: () => apiCall("/health"),
 };
 
 export default api;
