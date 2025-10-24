@@ -9,11 +9,12 @@
     "eject": "react-scripts eject"
   },
   "dependencies": {
+    "autoprefixer": "^10.0.0",
+    "postcss": "^8.0.0",
     "react": "^18.0.0",
     "react-dom": "^18.0.0",
-    "tailwindcss": "^2.0.0",
-    "postcss": "^8.0.0",
-    "autoprefixer": "^10.0.0"
+    "react-router-dom": "^7.9.4",
+    "tailwindcss": "^2.0.0"
   },
   "devDependencies": {
     "react-scripts": "5.0.0"

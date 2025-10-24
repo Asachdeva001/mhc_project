@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "concurrently": "^7.0.0",
-    "nodemon": "^2.0.0"
+    "nodemon": "^2.0.0",
+    "react-router-dom": "^7.9.4"
   }
 }
