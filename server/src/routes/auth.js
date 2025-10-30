@@ -61,7 +61,7 @@ router.post("/signup", async (req, res) => {
       preferences: { notifications: true, theme: "light" },
     });
 
-    const sessionToken = Buffer.from(${userRecord.uid}:${Date.now()}).toString("base64");
+    const sessionToken = Buffer.from(`${userRecord.uid}:${Date.now()}`).toString("base64");
 
     res.json({
       message: "User created successfully",
@@ -85,3 +85,62 @@ router.post("/signup", async (req, res) => {
     }
   }
 });
+
+// Sign in
+router.post("/signin", async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ error: "Email is required" });
+
+    const userRecord = await admin.auth().getUserByEmail(email);
+
+    const sessionToken = Buffer.from(`${userRecord.uid}:${Date.now()}`).toString("base64");
+
+    res.json({
+      message: "Sign in successful",
+      sessionToken,
+      user: {
+        uid: userRecord.uid,
+        email: userRecord.email,
+        name: userRecord.displayName,
+      },
+    });
+  } catch (error) {
+    console.error("Error signing in user:", error);
+    if (error.code === "auth/user-not-found") {
+      res.status(401).json({ error: "User not found" });
+    } else {
+      res.status(500).json({ error: "Failed to sign in" });
+    }
+  }
+});
+
+
+// Profile routes
+router.get("/profile", verifyToken, async (req, res) => {
+  try {
+    const userDoc = await db.collection("users").doc(req.user.uid).get();
+    if (!userDoc.exists) return res.status(404).json({ error: "User not found" });
+
+    res.json(userDoc.data());
+  } catch (error) {
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+router.put("/profile", verifyToken, async (req, res) => {
+  try {
+    await db.collection("users").doc(req.user.uid).set(
+      {
+        ...req.body,
+        updatedAt: new Date().toISOString(),
+      },
+      { merge: true }
+    );
+    res.json({ message: "Profile updated" });
+  } catch (error) {
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+module.exports = router;
