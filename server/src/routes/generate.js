@@ -25,6 +25,27 @@ const verifyToken = async (req, res, next) => {
   }
 };
 
+router.post('/save-conversation', async (req, res) => {
+  try {
+    const db = getFirestore();
+    const { messages, sessionId, userId } = req.body;
+
+    const data = {
+      userId,
+      messages,
+      sessionId: sessionId || `session_${Date.now()}`,
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    };
+
+    await db.collection('chatConversations').add(data);
+
+    res.json({ message: 'Saved', sessionId: data.sessionId });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to save conversation' });
+  }
+});
+
+
 router.post('/', verifyToken, async (req, res) => {
   res.json({ ok: true });
 });
