@@ -47,3 +47,6 @@ Thumbs.db
 # Test reports
 coverage
 .nyc_output
+
+#Model 
+server/src/SentimentalAnalysisModel/model.safetensors
