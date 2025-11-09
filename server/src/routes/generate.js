@@ -1,27 +1,36 @@
-const express = require('express');
-const router = express.Router();
-const { GoogleGenerativeAI } = require('@google/generative-ai');
-const { logConversation, getFirestore } = require('../lib/firebase');
-const { initializeFirebase } = require('../lib/firebase');
+const fetch = require('node-fetch'); // if you're on Node 18+, you can use global fetch instead
 
-const admin = initializeFirebase();
+const MENTAL_API_URL =
+  process.env.MENTAL_API_URL || 'http://localhost:5001/predictMentalState';
 
-// Initialize Gemini AI
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+// 🔥 Detect crisis using the Flask /predictMentalState endpoint
+const detectCrisis = async (message) => {
+  try {
+    const resp = await fetch(MENTAL_API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: message }),
+    });
 
-// Crisis detection keywords
-const crisisKeywords = [
-  'suicide', 'kill myself', 'end my life', 'not worth living',
-  'self harm', 'cut myself', 'hurt myself', 'want to die',
-  'better off dead', 'no point living', 'give up', 'hopeless',
-  'cant go on', 'end it all', 'take my life', 'self-destruct'
-];
+    if (!resp.ok) {
+      console.error('MentalState API error status:', resp.status);
+      return { isCrisis: false, scores: null };
+    }
 
-// Detect crisis
-const detectCrisis = (message) => {
-  const lowerMessage = message.toLowerCase();
-  return crisisKeywords.some(keyword => lowerMessage.includes(keyword));
+    const data = await resp.json();
+
+    return {
+      isCrisis: Boolean(data.isCrisis),
+      scores: data.scores || null,
+    };
+  } catch (err) {
+    console.error('Error calling MentalState API:', err);
+    // If the model is down, fail safe (no crisis) or flip this to true if you want ultra-conservative behaviour
+    return { isCrisis: false, scores: null };
+  }
 };
+
+module.exports = { detectCrisis };
 
 // Generate empathetic response
 const generateResponse = async (messages) => {
