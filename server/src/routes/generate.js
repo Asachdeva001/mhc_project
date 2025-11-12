@@ -1,3 +1,11 @@
+const express = require('express');
+const router = express.Router();
+const { GoogleGenerativeAI } = require('@google/generative-ai');
+const { logConversation, getFirestore } = require('../lib/firebase');
+const { initializeFirebase } = require('../lib/firebase');
+const admin = initializeFirebase();
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+
 const fetch = require('node-fetch'); // if you're on Node 18+, you can use global fetch instead
 
 const MENTAL_API_URL =
