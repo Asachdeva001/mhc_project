@@ -120,6 +120,76 @@ router.post('/log', verifyToken, async (req, res) => {
   }
 });
 
+const FLASK_MOOD_URL =
+  process.env.MOOD_API_URL || 'http://127.0.0.1:5001/predictMood';
+
+// 🔥 VIDEO-BASED MOOD DETECTION FROM FRAME
+router.post('/video', verifyToken, async (req, res) => {
+  try {
+    const db = getFirestore();
+    if (!db) {
+      return res.status(503).json({ error: 'Database not available. Please check Firebase configuration.' });
+    }
+
+    const { frame } = req.body;
+    if (!frame) {
+      return res.status(400).json({ error: 'Frame is required' });
+    }
+
+    // Call Flask /predictMood
+    const flaskResp = await fetch(FLASK_MOOD_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ image: frame }),
+    });
+
+    const data = await flaskResp.json().catch(() => ({}));
+
+    if (!flaskResp.ok || !data.emotion) {
+      console.error('Flask /predictMood error:', flaskResp.status, data);
+      return res.status(502).json({ error: data.error || 'Mood model service unavailable' });
+    }
+
+    const emotion = data.emotion;
+    const confidence = data.confidence;
+
+    // Map emotion → numeric mood (1–10)
+    const EMOTION_TO_MOOD = {
+      angry: 3,
+      disgust: 4,
+      fear: 3,
+      sad: 2,
+      neutral: 5,
+      surprise: 7,
+      happy: 9,
+    };
+    const moodScore = EMOTION_TO_MOOD[emotion] ?? 5;
+
+    const timestamp = new Date().toISOString();
+    const date = timestamp.split('T')[0];
+
+    await db.collection('moodEntries').add({
+      userId: req.user.uid,
+      mood: moodScore,
+      emotion,
+      confidence,
+      source: 'video',
+      date,
+      timestamp,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+
+    return res.json({
+      mood: moodScore,
+      emotion,
+      confidence,
+    });
+  } catch (error) {
+    console.error('Error in /mood/video:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // Get user's mood entries
 router.get('/entries', verifyToken, async (req, res) => {
   try {

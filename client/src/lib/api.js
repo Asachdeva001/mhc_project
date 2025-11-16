@@ -163,11 +163,19 @@ export const api = {
   },
 
   // Mood endpoints
-  mood: {
+    mood: {
     logMood: async (moodData) => {
       return apiCall('/api/mood/log', {
         method: 'POST',
         body: JSON.stringify(moodData),
+      });
+    },
+
+    // ⬇️ NEW: video-based mood logging
+    logVideoMood: async (frame) => {
+      return apiCall('/api/mood/video', {
+        method: 'POST',
+        body: JSON.stringify({ frame }),
       });
     },
     
@@ -184,6 +192,7 @@ export const api = {
       return apiCall('/api/mood/today');
     },
   },
+
 
   // Activities endpoints
   activities: {

@@ -95,9 +95,18 @@ def detect_face(image: Image.Image):
 
 
 def preprocess_face(image: Image.Image):
+    # Resize to model input size
     image = image.resize((224, 224))
-    img_array = np.array(image)
-    img_array = preprocess_input(np.expand_dims(img_array, axis=0))
+
+    # Convert to float32
+    img_array = np.array(image).astype("float32")
+
+    # Apply EfficientNet preprocessing (scaling, normalization, etc.)
+    img_array = preprocess_input(img_array)
+
+    # Add batch dimension: (1, 224, 224, 3)
+    img_array = np.expand_dims(img_array, axis=0)
+
     return img_array
 
 
