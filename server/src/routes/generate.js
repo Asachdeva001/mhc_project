@@ -6,10 +6,10 @@ const { initializeFirebase } = require('../lib/firebase');
 const admin = initializeFirebase();
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-const fetch = require('node-fetch'); // if you're on Node 18+, you can use global fetch instead
+const fetch = require('node-fetch'); // v2 style
 
-const MENTAL_API_URL =
-  process.env.MENTAL_API_URL || 'http://localhost:5001/predictMentalState';
+// Hardcode the Flask URL for now to avoid env issues
+const MENTAL_API_URL = 'http://localhost:5001/predictMentalState';
 
 // 🔥 Detect crisis using the Flask /predictMentalState endpoint
 const detectCrisis = async (message) => {
@@ -20,12 +20,25 @@ const detectCrisis = async (message) => {
       body: JSON.stringify({ text: message }),
     });
 
+    console.log('MentalState API status:', resp.status);
+
+    const rawBody = await resp.text();
+    console.log('MentalState API raw body:', rawBody);
+
     if (!resp.ok) {
       console.error('MentalState API error status:', resp.status);
       return { isCrisis: false, scores: null };
     }
 
-    const data = await resp.json();
+    let data;
+    try {
+      data = JSON.parse(rawBody);
+    } catch (e) {
+      console.error('Failed to parse JSON from MentalState API:', e);
+      return { isCrisis: false, scores: null };
+    }
+
+    console.log('MentalState API parsed JSON:', data);
 
     return {
       isCrisis: Boolean(data.isCrisis),
@@ -33,12 +46,10 @@ const detectCrisis = async (message) => {
     };
   } catch (err) {
     console.error('Error calling MentalState API:', err);
-    // If the model is down, fail safe (no crisis) or flip this to true if you want ultra-conservative behaviour
     return { isCrisis: false, scores: null };
   }
 };
 
-module.exports = { detectCrisis };
 
 // Generate empathetic response
 const generateResponse = async (messages) => {
@@ -140,7 +151,6 @@ ${userMessage}`;
   }
 };
 
-// Main endpoint  
 router.post('/', async (req, res) => {
   try {
     const { message, messages = [], userId = 'anonymous' } = req.body;
@@ -149,41 +159,49 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ error: 'Message is required' });
     }
 
-    // Crisis detection
-    if (detectCrisis(message)) {
+    // ✅ 1) Call Flask & check crisis result
+    const crisisResult = await detectCrisis(message);
+    console.log('Crisis result in route:', crisisResult);
+
+    // Optional: tiny textual backup heuristic
+    const heuristicCrisis = /kill myself|suicide|end my life|take my life/i.test(message);
+    const isCrisis = crisisResult.isCrisis || heuristicCrisis;
+
+    if (isCrisis) {
       const crisisResponse = {
-        reply: "I'm really concerned about what you're sharing. Your life has deep value, and you don't have to go through this alone. Please reach out to someone you trust or call a crisis helpline immediately.",
+        reply:
+          "I'm really concerned about what you're sharing. Your life has deep value, and you don't have to go through this alone. Please reach out to someone you trust or call a crisis helpline immediately.",
         crisis: true,
         timestamp: new Date().toISOString(),
         helplines: {
-          india: "1800-599-0019",
-        }
+          india: '1800-599-0019',
+        },
+        scores: crisisResult.scores || null,
       };
 
       await logConversation(userId, message, crisisResponse.reply, true);
       return res.json(crisisResponse);
     }
 
-    // Combine the history with the new user message
+    // ✅ 2) Non-crisis → use Gemini
     const fullConversation = [
       ...messages,
-      { role: 'user', content: message }
+      { role: 'user', content: message },
     ];
 
-    // Generate AI response using the new 3-part prompt structure
     const aiResponse = await generateResponse(fullConversation);
 
     const response = {
       reply: aiResponse,
       crisis: false,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     };
 
     await logConversation(userId, message, aiResponse, false);
-    res.json(response);
+    return res.json(response);
   } catch (error) {
     console.error('Generate route error:', error);
-    res.status(500).json({ error: 'Something went wrong' });
+    return res.status(500).json({ error: 'Something went wrong' });
   }
 });
 

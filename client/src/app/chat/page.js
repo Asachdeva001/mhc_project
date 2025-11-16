@@ -236,7 +236,7 @@ export default function ChatPage() {
         await api.chat.saveConversation(finalMessages, sessionId);
       }
     } finally {
-      setIsAiTyping(false);
+      setIsLoading(false);
     }
   };
 
